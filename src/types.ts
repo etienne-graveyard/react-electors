@@ -11,7 +11,7 @@ export type ReactElectorsSelector<State, Inputs extends Array<any>, Output> = (
 type Unsubscribe = () => void;
 
 export interface Connect<State> {
-  selectChildren<Inputs extends Array<any>, Output>(
+  useChildren<Inputs extends Array<any>, Output>(
     selector: ReactElectorsSelector<State, Inputs, Output>,
     ...inputs: Inputs
   ): Output;

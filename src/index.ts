@@ -1,2 +1,2 @@
-export { ReactElectors as default } from './ReactElectors';
+export { ReactElectors as default, useMemo, createConnect } from './ReactElectors';
 export { ProviderProps, ReactElectorsSelector, Store } from './types';

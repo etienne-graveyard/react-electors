@@ -7,7 +7,9 @@ export const ReactElectors = {
   createConnect,
 };
 
-function createConnect<State>(): Connect<State> {
+export const useMemo = Electors.useMemo;
+
+export function createConnect<State>(): Connect<State> {
   const ConnectContext = React.createContext<Store<State> | null>(null);
 
   const Provider: React.FC<ProviderProps<State>> = React.memo<ProviderProps<State>>(
@@ -17,7 +19,7 @@ function createConnect<State>(): Connect<State> {
   );
   Provider.displayName = 'ConnectProvider';
 
-  function selectChildren<Inputs extends Array<any>, Output>(
+  function useChildren<Inputs extends Array<any>, Output>(
     selector: ReactElectorsSelector<State, Inputs, Output>,
     ...inputs: Inputs
   ): Output {
@@ -76,7 +78,7 @@ function createConnect<State>(): Connect<State> {
   }
 
   return {
-    selectChildren,
+    useChildren,
     useSelector,
     Provider,
   };
