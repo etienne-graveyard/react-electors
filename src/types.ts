@@ -19,7 +19,8 @@ export interface Connect<State> {
     selector: ReactElectorsSelector<State, Inputs, Output>,
     ...inputs: Inputs
   ) => Output;
-  Provider: React.FunctionComponent<ProviderProps<State>>;
+  Provider: React.FC<ProviderProps<State>>;
+  Helper: React.FC;
 }
 
 export interface ProviderProps<State> {

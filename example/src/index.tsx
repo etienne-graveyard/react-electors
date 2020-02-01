@@ -1,8 +1,55 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { useSelector, selectors, store, ConnectProvider } from './store';
+import { useSelector, selectors, store, Provider, Helper } from './store';
 
 let nextTodoId = 0;
+
+const Todo = React.memo<{ todoId: number }>(({ todoId }) => {
+  console.log(`Render Todo ${todoId}`);
+
+  const todo = useSelector(selectors.todo, todoId);
+
+  if (!todo) {
+    throw new Error('Zombi child !');
+  }
+
+  return (
+    <div>
+      <input
+        type="checkbox"
+        checked={todo.done}
+        onChange={e => {
+          store.update(draft => {
+            const todo = draft.todos.find(t => t.id === todoId);
+            if (todo) {
+              todo.done = !todo.done;
+            }
+          });
+        }}
+      />
+      <span>{todo.title}</span>
+      <button
+        onClick={() => {
+          store.update(draft => {
+            draft.todos = draft.todos.filter(t => t.id !== todoId);
+          });
+        }}
+      >
+        <span role="img" aria-label="delete">
+          ❌
+        </span>
+      </button>
+    </div>
+  );
+});
+
+const Done = React.memo(() => {
+  console.log('Render Done');
+
+  const doneCount = useSelector(selectors.doneCount);
+
+  return <p>Done: {doneCount}</p>;
+});
 
 const App = () => {
   console.log('Render App');
@@ -44,56 +91,22 @@ const App = () => {
           }
         }}
       />
-      <div>
-        {todos.map(todo => {
-          return <Todo todoId={todo.id} key={todo.id} />;
-        })}
-      </div>
+      <Helper>
+        <div>
+          {todos.map(todo => {
+            return <Todo todoId={todo.id} key={todo.id} />;
+          })}
+        </div>
+      </Helper>
       <p>Count: {todosCount}</p>
       <Done />
     </div>
   );
 };
 
-const Done = React.memo(function Done() {
-  console.log('Render Done');
-
-  const doneCount = useSelector(selectors.doneCount);
-
-  return <p>Done: {doneCount}</p>;
-});
-
-const Todo = React.memo<{ todoId: number }>(function Todo({ todoId }) {
-  console.log(`Render Todo ${todoId}`);
-
-  const todo = useSelector(selectors.todo, todoId);
-
-  if (!todo) {
-    return null;
-  }
-
-  return (
-    <div>
-      <input
-        type="checkbox"
-        checked={todo.done}
-        onChange={e => {
-          store.update(draft => {
-            const todo = draft.todos.find(t => t.id === todoId);
-            if (todo) {
-              todo.done = !todo.done;
-            }
-          });
-        }}
-      />
-      <span>{todo.title}</span>
-    </div>
-  );
-});
-
 ReactDOM.render(
-  <ConnectProvider store={store}>
+  <Provider store={store}>
     <App />
-  </ConnectProvider>,
+  </Provider>,
   document.getElementById('root')
 );

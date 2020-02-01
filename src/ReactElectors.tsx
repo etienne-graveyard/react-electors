@@ -1,6 +1,7 @@
 import Electors from 'electors';
 import { Connect, Store, ProviderProps, ReactElectorsSelector } from './types';
 import React from 'react';
+import { Subscription, createSubscription } from './Subscription';
 
 export const ReactElectors = {
   useMemo: Electors.useMemo,
@@ -9,15 +10,72 @@ export const ReactElectors = {
 
 export const useMemo = Electors.useMemo;
 
-export function createConnect<State>(): Connect<State> {
-  const ConnectContext = React.createContext<Store<State> | null>(null);
+const StoreContext = React.createContext<Store<any> | null>(null);
+const SubContext = React.createContext<Subscription | null>(null);
 
+export function createConnect<State>(): Connect<State> {
   const Provider: React.FC<ProviderProps<State>> = React.memo<ProviderProps<State>>(
     ({ children, store }) => {
-      return <ConnectContext.Provider value={store}>{children}</ConnectContext.Provider>;
+      const [sub] = React.useState(() => createSubscription());
+
+      const subSubCallRequested = React.useRef<boolean>(false);
+
+      const forceUpdate = useForceUpdate();
+
+      React.useLayoutEffect(() => {
+        return store.subscribe(() => {
+          sub.callChildren();
+          subSubCallRequested.current = true;
+          forceUpdate();
+        });
+      }, [sub, store, forceUpdate]);
+
+      React.useLayoutEffect(() => {
+        if (subSubCallRequested.current) {
+          subSubCallRequested.current = false;
+          sub.callSub();
+        }
+      });
+
+      return (
+        <StoreContext.Provider value={store}>
+          <SubContext.Provider value={sub}>{children}</SubContext.Provider>
+        </StoreContext.Provider>
+      );
     }
   );
-  Provider.displayName = 'ConnectProvider';
+  Provider.displayName = 'ElectorsProvider';
+
+  const Helper: React.FC = React.memo(({ children }) => {
+    const parentSub = React.useContext(SubContext);
+    if (parentSub === null) {
+      throw new Error(`Provider is missing !`);
+    }
+
+    const [sub] = React.useState(() => createSubscription());
+
+    const subSubCallRequested = React.useRef<boolean>(false);
+
+    const forceUpdate = useForceUpdate();
+
+    React.useLayoutEffect(() => {
+      return parentSub.subscribeSubscription(() => {
+        sub.callChildren();
+        subSubCallRequested.current = true;
+        forceUpdate();
+      });
+    }, [sub, parentSub, forceUpdate]);
+
+    React.useLayoutEffect(() => {
+      if (subSubCallRequested.current) {
+        subSubCallRequested.current = false;
+        sub.callSub();
+      }
+    });
+
+    return <SubContext.Provider value={sub}>{children}</SubContext.Provider>;
+  });
+  Helper.displayName = 'ElectorsHelper';
 
   function useChildren<Inputs extends Array<any>, Output>(
     selector: ReactElectorsSelector<State, Inputs, Output>,
@@ -30,9 +88,10 @@ export function createConnect<State>(): Connect<State> {
     selector: ReactElectorsSelector<State, Inputs, Output>,
     ...inputs: Inputs
   ): Output {
-    const store = React.useContext(ConnectContext);
-    if (store === null) {
-      throw new Error(`ConnectContext is missing !`);
+    const sub = React.useContext(SubContext);
+    const store = React.useContext(StoreContext);
+    if (sub === null || store === null) {
+      throw new Error(`Provider is missing !`);
     }
 
     const [selectCtx] = React.useState(() =>
@@ -60,7 +119,7 @@ export function createConnect<State>(): Connect<State> {
     }, [selectCtx]);
 
     React.useEffect(() => {
-      const unsubscribe = store.subscribe(() => {
+      const unsubscribe = sub.subscribeChildren(() => {
         const nextState = selectCtx.execute(selectorRef.current as any, ...inputsRef.current);
 
         if (stateRef.current !== nextState) {
@@ -72,7 +131,7 @@ export function createConnect<State>(): Connect<State> {
         forceUpdate();
       }
       return unsubscribe;
-    }, [store, forceUpdate, selectCtx]);
+    }, [store, forceUpdate, selectCtx, sub]);
 
     return stateRef.current as any;
   }
@@ -81,6 +140,7 @@ export function createConnect<State>(): Connect<State> {
     useChildren,
     useSelector,
     Provider,
+    Helper,
   };
 }
 

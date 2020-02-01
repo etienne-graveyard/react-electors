@@ -20,13 +20,17 @@ interface State {
 }
 
 export const store = createStore<State>({
-  todos: [],
+  todos: [
+    { title: 'Stuff', done: false, id: -1 },
+    { title: 'Stuff', done: true, id: -2 },
+    { title: 'Stuff', done: false, id: -3 },
+  ],
   hideDone: false,
 });
 
 // Connect
 
-export const { Provider: ConnectProvider, useSelector, useChildren } = createConnect<State>();
+export const { Provider, Helper, useSelector, useChildren } = createConnect<State>();
 
 // Selector
 
@@ -46,7 +50,11 @@ const useVisibleTodosCount: Selector<number> = () => {
 // selector can take parameter
 const useTodo: Selector<Todo | null, [number]> = (state, todoId) => {
   return useMemo(() => {
-    return state.todos.find(todo => todo.id === todoId) || null;
+    const res = state.todos.find(todo => todo.id === todoId);
+    if (res === undefined) {
+      throw new Error('Zombie !');
+    }
+    return res;
   }, [state.todos, todoId]);
 };
 
