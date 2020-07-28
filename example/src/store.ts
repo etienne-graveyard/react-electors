@@ -65,13 +65,13 @@ const useDoneCount: Selector<number> = state => {
 
 // This is just a simple store using immer
 function createStore<T>(initial: T) {
-  const sub = Subscription.create();
+  const sub = Subscription();
   let state = initial;
   return {
     getState: () => state,
     update: (updater: (draft: T) => any) => {
       state = produce(state, updater);
-      sub.call();
+      sub.emit();
     },
     subscribe: sub.subscribe,
   };

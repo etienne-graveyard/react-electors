@@ -11,12 +11,12 @@ export interface Subscription {
 }
 
 export function createSubscription(): Subscription {
-  const childrenSub = Sub.create();
-  const subSub = Sub.create();
+  const childrenSub = Sub();
+  const subSub = Sub();
 
   return {
-    callChildren: childrenSub.call,
-    callSub: subSub.call,
+    callChildren: childrenSub.emit,
+    callSub: subSub.emit,
     subscribeChildren: childrenSub.subscribe,
     subscribeSubscription: subSub.subscribe,
   };
