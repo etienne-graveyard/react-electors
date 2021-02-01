@@ -1,4 +1,4 @@
-import Electors from 'electors';
+import * as Electors from 'electors';
 import { Connect, Store, ProviderProps, ReactElectorsSelector } from './types';
 import React from 'react';
 import { Subscription, createSubscription } from './Subscription';
